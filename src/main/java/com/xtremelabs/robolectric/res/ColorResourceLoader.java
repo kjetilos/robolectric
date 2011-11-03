@@ -30,7 +30,14 @@ public class ColorResourceLoader extends XpathResourceXmlLoader implements Resou
 
     public int getValue(int colorId) {
         String resourceName = resourceExtractor.getResourceName(colorId);
-        return resourceName == null ? -1 : colorResolver.getValue(resourceName);
+        if (resourceName == null) {
+            return -1;
+        }
+        Integer value = colorResolver.getValue(resourceName);
+        if (value == null) {
+            throw new IllegalStateException("No color with id " + colorId + " (" + resourceName + ")");
+        }
+        return value;
     }
 
     @Override
