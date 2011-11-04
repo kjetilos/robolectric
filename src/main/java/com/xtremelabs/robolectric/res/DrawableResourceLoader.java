@@ -5,18 +5,12 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.w3c.dom.Document;
-import org.w3c.dom.NamedNodeMap;
-import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
-
 import android.R;
-import android.graphics.drawable.Drawable;
-import android.graphics.drawable.LayerDrawable;
-import android.graphics.drawable.StateListDrawable;
 
+import android.graphics.drawable.*;
 import com.xtremelabs.robolectric.Robolectric;
 import com.xtremelabs.robolectric.shadows.ShadowStateListDrawable;
+import org.w3c.dom.*;
 
 /**
  * DrawableResourceLoader
@@ -39,20 +33,14 @@ public class DrawableResourceLoader extends XmlLoader {
     /** document */
     protected Map<String, Document> documents = new HashMap<String, Document>();
 
-    /** resource directory */
-    protected File resourceDirectory;
-
     /**
      * DrawableResourceLoader constructor.
      * 
      * @param extractor
      *            Extractor
-     * @param resourceDirectory
-     *            Resource directory
      */
-    public DrawableResourceLoader(ResourceExtractor extractor, File resourceDirectory) {
+    public DrawableResourceLoader(ResourceExtractor extractor) {
         super(extractor);
-        this.resourceDirectory = resourceDirectory;
     }
 
     /**

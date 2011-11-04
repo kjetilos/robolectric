@@ -1,12 +1,25 @@
 package com.xtremelabs.robolectric.res;
 
-import static com.xtremelabs.robolectric.Robolectric.shadowOf;
-
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileFilter;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.lang.reflect.Field;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+
+import com.xtremelabs.robolectric.Robolectric;
+import com.xtremelabs.robolectric.RobolectricConfig;
+import com.xtremelabs.robolectric.shadows.ShadowContextWrapper;
+import com.xtremelabs.robolectric.util.I18nException;
+import com.xtremelabs.robolectric.util.PropertiesHelper;
 
 import android.R;
 import android.content.Context;
@@ -17,11 +30,6 @@ import android.preference.PreferenceScreen;
 import android.view.Menu;
 import android.view.View;
 import android.view.ViewGroup;
-
-import com.xtremelabs.robolectric.Robolectric;
-import com.xtremelabs.robolectric.shadows.ShadowContextWrapper;
-import com.xtremelabs.robolectric.util.I18nException;
-import com.xtremelabs.robolectric.util.PropertiesHelper;
 
 public class ResourceLoader {
     private static final FileFilter MENU_DIR_FILE_FILTER = new FileFilter() {
@@ -43,8 +51,8 @@ public class ResourceLoader {
         }
     };
 
-    private File resourceDir;
-    private File assetsDir;
+    private final List<File> resourceDirs = new ArrayList<File>();
+    private final List<File> assetsDirs = new ArrayList<File>();
     private int sdkVersion;
     private Class rClass;
 
@@ -58,75 +66,128 @@ public class ResourceLoader {
     private final AttrResourceLoader attrResourceLoader;
     private final ColorResourceLoader colorResourceLoader;
     private final DrawableResourceLoader drawableResourceLoader;
-    private final RawResourceLoader rawResourceLoader;
+    private final List<RawResourceLoader> rawResourceLoaders = new ArrayList<RawResourceLoader>();
     private boolean isInitialized = false;
     private boolean strictI18n = false;
 
     // TODO: get these value from the xml resources instead [xw 20101011]
     public final Map<Integer, Integer> dimensions = new HashMap<Integer, Integer>();
 
-    public ResourceLoader(int sdkVersion, Class rClass, File resourceDir, File assetsDir) throws Exception {
+    public ResourceLoader(int sdkVersion, Class rClass, File resourceDir, File assetsDir,
+                          List<File> libResourceDirs, List<File> libAssetDirs) throws Exception {
         this.sdkVersion = sdkVersion;
-        this.assetsDir = assetsDir;
         this.rClass = rClass;
         resourceExtractor = new ResourceExtractor();
         resourceExtractor.addLocalRClass(rClass);
         resourceExtractor.addSystemRClass(R.class);
+
+        assetsDirs.add(assetsDir);
+        for (File libAssetDir : libAssetDirs) {
+            assetsDirs.add(libAssetDir);
+        }
+        resourceDirs.add(resourceDir);
+        for (File libResourceDir : libResourceDirs) {
+            resourceDirs.add(libResourceDir);
+        }
+        for (File rDir : this.resourceDirs) {
+            rawResourceLoaders.add(new RawResourceLoader(resourceExtractor, rDir));
+        }
 
         stringResourceLoader = new StringResourceLoader(resourceExtractor);
         pluralResourceLoader = new PluralResourceLoader(resourceExtractor, stringResourceLoader);
         stringArrayResourceLoader = new StringArrayResourceLoader(resourceExtractor, stringResourceLoader);
         colorResourceLoader = new ColorResourceLoader(resourceExtractor);
         attrResourceLoader = new AttrResourceLoader(resourceExtractor);
-        drawableResourceLoader = new DrawableResourceLoader(resourceExtractor, resourceDir);
-        rawResourceLoader = new RawResourceLoader(resourceExtractor, resourceDir);
-
-        this.resourceDir = resourceDir;
+        drawableResourceLoader = new DrawableResourceLoader(resourceExtractor);
     }
-    
+
+    public ResourceLoader(int sdkVersion, Class rClass, File resourceDir, File assetsDir) throws Exception {
+        this(sdkVersion, rClass, resourceDir, assetsDir, Collections.<File>emptyList(), Collections.<File>emptyList());
+    }
+
+    public ResourceLoader(RobolectricConfig config, List<RobolectricConfig> libConfigs) throws Exception {
+        this(getSdkVersion(config), getRClass(config), getResourceDir(config), getAssetsDir(config),
+             getResourceDirs(libConfigs), getAssetsDirs(libConfigs));
+    }
+
+    private static List<File> getAssetsDirs(List<RobolectricConfig> configs) {
+        List<File> assetsDirs = new ArrayList<File>();
+        for (RobolectricConfig config : configs) {
+            assetsDirs.add(getAssetsDir(config));
+        }
+        return assetsDirs;
+    }
+
+    private static List<File> getResourceDirs(List<RobolectricConfig> configs) {
+        List<File> resourceDirs = new ArrayList<File>();
+        for (RobolectricConfig config : configs) {
+            resourceDirs.add(getResourceDir(config));
+        }
+        return resourceDirs;
+    }
+
+    private static int getSdkVersion(RobolectricConfig config) {
+        return config.getRealSdkVersion();
+    }
+
+    private static Class getRClass(RobolectricConfig config) throws Exception {
+        String rClassName = config.getRClassName();
+        return Class.forName(rClassName);
+    }
+
+    private static File getResourceDir(RobolectricConfig config) {
+        return config.getResourceDirectory();
+    }
+
+    private static File getAssetsDir(RobolectricConfig config) {
+        return config.getAssetsDirectory();
+    }
+
     public void setStrictI18n(boolean strict) {
     	this.strictI18n = strict;
     	if (viewLoader != null ) 	   { viewLoader.setStrictI18n(strict); }
     	if (menuLoader != null ) 	   { menuLoader.setStrictI18n(strict); }
     	if (preferenceLoader != null ) { preferenceLoader.setStrictI18n(strict); }
     }
-    
+
     public boolean getStrictI18n() { return strictI18n; }
-    
+
     private void init() {
         if (isInitialized) {
             return;
         }
 
         try {
-            if (resourceDir != null) {
+            if (getResourceDir() != null) {
                 viewLoader = new ViewLoader(resourceExtractor, attrResourceLoader);
                 menuLoader = new MenuLoader(resourceExtractor, attrResourceLoader);
                 preferenceLoader = new PreferenceLoader(resourceExtractor);
-                
+
                 viewLoader.setStrictI18n(strictI18n);
                 menuLoader.setStrictI18n(strictI18n);
                 preferenceLoader.setStrictI18n(strictI18n);
 
                 File systemResourceDir = getSystemResourceDir(getPathToAndroidResources());
-                File localValueResourceDir = getValueResourceDir(resourceDir);
                 File systemValueResourceDir = getValueResourceDir(systemResourceDir);
-                File preferenceDir = getPreferenceResourceDir(resourceDir);
+                for (File resourceDir : resourceDirs) {
+                    File localValueResourceDir = getValueResourceDir(resourceDir);
+                    File preferenceDir = getPreferenceResourceDir(resourceDir);
 
-                loadStringResources(localValueResourceDir, systemValueResourceDir);
-                loadPluralsResources(localValueResourceDir, systemValueResourceDir);
-                loadValueResources(localValueResourceDir, systemValueResourceDir);
-                loadViewResources(systemResourceDir, resourceDir);
-                loadMenuResources(resourceDir);
-                loadDrawableResources(resourceDir);
-                loadPreferenceResources(preferenceDir);
+                    loadStringResources(localValueResourceDir, systemValueResourceDir);
+                    loadPluralsResources(localValueResourceDir, systemValueResourceDir);
+                    loadValueResources(localValueResourceDir, systemValueResourceDir);
+                    loadViewResources(systemResourceDir, resourceDir);
+                    loadMenuResources(resourceDir);
+                    loadDrawableResources(resourceDir);
+                    loadPreferenceResources(preferenceDir);
+                }
             } else {
                 viewLoader = null;
                 menuLoader = null;
                 preferenceLoader = null;
             }
         } catch(I18nException e) {
-        	throw e;
+            throw e;
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -236,7 +297,7 @@ public class ResourceLoader {
     private String getAndroidResourcePathFromLocalProperties() {
         // Hand tested
         // This is the path most often taken by IntelliJ
-        File rootDir = resourceDir.getParentFile();
+        File rootDir = getResourceDir().getParentFile();
         String localPropertiesFileName = "local.properties";
         File localPropertiesFile = new File(rootDir, localPropertiesFileName);
         if (!localPropertiesFile.exists()) {
@@ -256,6 +317,10 @@ public class ResourceLoader {
             }
         }
         return null;
+    }
+
+    private File getResourceDir() {
+        return resourceDirs.isEmpty() ? null : resourceDirs.iterator().next();
     }
 
     private String getAndroidResourcePathFromSystemEnvironment() {
@@ -316,12 +381,11 @@ public class ResourceLoader {
         attrResourceLoader = null;
         colorResourceLoader = null;
         drawableResourceLoader = null;
-        rawResourceLoader = null;
     }
 
     public static ResourceLoader getFrom(Context context) {
-        ResourceLoader resourceLoader = shadowOf(
-                context.getApplicationContext()).getResourceLoader();
+        ResourceLoader resourceLoader = Robolectric.shadowOf(
+            context.getApplicationContext()).getResourceLoader();
         resourceLoader.init();
         return resourceLoader;
     }
@@ -350,7 +414,7 @@ public class ResourceLoader {
         init();
         return pluralResourceLoader.getValue(id, quantity);
     }
-    
+
     public boolean isDrawableXml(int resourceId) {
         init();
         return drawableResourceLoader.isXml(resourceId);
@@ -360,11 +424,11 @@ public class ResourceLoader {
         init();
         return drawableResourceLoader.getDrawableIds(resourceId);
     }
-    
+
     public Drawable getXmlDrawable( int resourceId ) {
     	return drawableResourceLoader.getXmlDrawable( resourceId );
     }
-    
+
     public Drawable getAnimDrawable( int resourceId ) {
     	return getInnerRClassDrawable( resourceId, "$anim", AnimationDrawable.class );
     }
@@ -377,7 +441,7 @@ public class ResourceLoader {
 	private Drawable getInnerRClassDrawable( int drawableResourceId, String suffix, Class returnClass ) {
     	ShadowContextWrapper shadowApp = Robolectric.shadowOf( Robolectric.application );
     	Class rClass = shadowApp.getResourceLoader().getLocalRClass();
-    	
+
     	// Check to make sure there is actually an R Class, if not
     	// return just a BitmapDrawable
     	if( rClass == null ) { return null; }
@@ -389,20 +453,26 @@ public class ResourceLoader {
 		} catch (ClassNotFoundException e) {
 			return null;
 		}
-		
+
 		// Try to find the passed in resource ID
 		try {
 			for( Field field : animClass.getDeclaredFields() ) {
 				if( field.getInt( animClass ) == drawableResourceId )  { return (Drawable) returnClass.newInstance(); }
-			}			
-		} catch ( Exception e ) { }  
-		
+			}
+		} catch ( Exception e ) { }
+
 		return null;
     }
 
     public InputStream getRawValue(int id) {
         init();
-        return rawResourceLoader.getValue(id);
+        for (RawResourceLoader rawResourceLoader : rawResourceLoaders) {
+            InputStream value = rawResourceLoader.getValue(id);
+            if (value != null) {
+                return value;
+            }
+        }
+        return null;
     }
 
     public String[] getStringArrayValue(int id) {
@@ -421,14 +491,14 @@ public class ResourceLoader {
     }
 
     public File getAssetsBase() {
-        return assetsDir;
+        return assetsDirs.isEmpty() ? null : assetsDirs.iterator().next();
     }
 
     @SuppressWarnings("rawtypes")
 	public Class getLocalRClass() { return rClass; }
-    
+
     public void setLocalRClass( Class clazz )  { rClass = clazz; }
-    
+
     public ResourceExtractor getResourceExtractor() {
         return resourceExtractor;
     }
