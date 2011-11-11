@@ -1,12 +1,13 @@
 package com.xtremelabs.robolectric.tester.android.util;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import android.util.AttributeSet;
 import android.view.View;
 import com.xtremelabs.robolectric.res.AttrResourceLoader;
 import com.xtremelabs.robolectric.res.ResourceExtractor;
 import com.xtremelabs.robolectric.util.I18nException;
-
-import java.util.*;
 
 public class TestAttributeSet implements AttributeSet {
     Map<String, String> attributes = new HashMap<String, String>();
@@ -14,7 +15,7 @@ public class TestAttributeSet implements AttributeSet {
     private AttrResourceLoader attrResourceLoader;
     private Class<? extends View> viewClass;
     private boolean isSystem = false;
-    
+
     /**
      * Names of attributes to be validated for i18n-safe values.
      */
@@ -131,7 +132,11 @@ public class TestAttributeSet implements AttributeSet {
     @Override
     public int getAttributeResourceValue(String namespace, String attribute, int defaultValue) {
         String value = getAttributeValueInMap(namespace, attribute);
-        return (value != null) ? resourceExtractor.getResourceId(value) : defaultValue;
+        Integer result = null;
+        if (value != null) {
+            result = resourceExtractor.getResourceId(value);
+        }
+        return result == null ? defaultValue : result;
     }
 
     @Override
@@ -175,14 +180,14 @@ public class TestAttributeSet implements AttributeSet {
     public int getStyleAttribute() {
         throw new UnsupportedOperationException();
     }
-    
+
     public void validateStrictI18n() {
     	for (int i = 0; i < strictI18nAttrs.length; i++) {
     		String key = strictI18nAttrs[i];
     		if (attributes.containsKey(key)) {
     			String value =  attributes.get(key);
     			if (!value.startsWith("@string/")) {
-		    	    throw new I18nException("View class: " + (viewClass != null ? viewClass.getName() : "") + 
+		    	    throw new I18nException("View class: " + (viewClass != null ? viewClass.getName() : "") +
 		    	    		" has attribute: " + key + " with hardcoded value: \"" + value + "\" and is not i18n-safe.");
     			}
     	    }
