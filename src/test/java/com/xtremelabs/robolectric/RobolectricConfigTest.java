@@ -3,6 +3,10 @@ package com.xtremelabs.robolectric;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import android.content.BroadcastReceiver;
+import android.content.Context;
+import android.content.Intent;
+
 import static android.content.pm.ApplicationInfo.*;
 import static com.xtremelabs.robolectric.util.TestUtil.newConfig;
 import static org.junit.Assert.assertEquals;
@@ -14,13 +18,28 @@ public class RobolectricConfigTest {
     public void shouldReadBroadcastReceivers() throws Exception {
         RobolectricConfig config = newConfig("TestAndroidManifestWithReceivers.xml");
 
-        assertEquals(2, config.getReceiverCount());
+        assertEquals(7, config.getReceiverCount());
 
         assertEquals("com.xtremelabs.robolectric.RobolectricConfigTest.ConfigTestReceiver", config.getReceiverClassName(0));
         assertEquals("com.xtremelabs.robolectric.ACTION1", config.getReceiverIntentFilterActions(0).get(0));
 
         assertEquals("com.xtremelabs.robolectric.RobolectricConfigTest.ConfigTestReceiver", config.getReceiverClassName(1));
         assertEquals("com.xtremelabs.robolectric.ACTION2", config.getReceiverIntentFilterActions(1).get(0));
+
+        assertEquals("com.xtremelabs.robolectric.test.ConfigTestReceiver", config.getReceiverClassName(2));
+        assertEquals("com.xtremelabs.robolectric.ACTION_SUPERSET_PACKAGE", config.getReceiverIntentFilterActions(2).get(0));
+
+        assertEquals("com.xtremelabs.ConfigTestReceiver", config.getReceiverClassName(3));
+        assertEquals("com.xtremelabs.robolectric.ACTION_SUBSET_PACKAGE", config.getReceiverIntentFilterActions(3).get(0));
+
+        assertEquals("com.xtremelabs.robolectric.DotConfigTestReceiver", config.getReceiverClassName(4));
+        assertEquals("com.xtremelabs.robolectric.ACTION_DOT_PACKAGE", config.getReceiverIntentFilterActions(4).get(0));
+
+        assertEquals("com.xtremelabs.robolectric.test.ConfigTestReceiver", config.getReceiverClassName(5));
+        assertEquals("com.xtremelabs.robolectric.ACTION_DOT_SUBPACKAGE", config.getReceiverIntentFilterActions(5).get(0));
+
+        assertEquals("com.foo.Receiver", config.getReceiverClassName(6));
+        assertEquals("com.xtremelabs.robolectric.ACTION_DIFFERENT_PACKAGE", config.getReceiverIntentFilterActions(6).get(0));
     }
 
     @Test
@@ -67,5 +86,11 @@ public class RobolectricConfigTest {
     
     private boolean hasFlag(final int flags, final int flag) {
     	return (flags & flag) != 0;
+    }
+    
+    public static class ConfigTestReceiver extends BroadcastReceiver {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+        }
     }
 }

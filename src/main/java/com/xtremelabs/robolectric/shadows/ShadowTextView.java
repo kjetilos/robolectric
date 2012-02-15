@@ -3,8 +3,7 @@ package com.xtremelabs.robolectric.shadows;
 import android.content.Context;
 import android.graphics.Typeface;
 import android.graphics.drawable.Drawable;
-import android.text.SpannableStringBuilder;
-import android.text.TextWatcher;
+import android.text.*;
 import android.text.method.MovementMethod;
 import android.text.method.TransformationMethod;
 import android.text.style.URLSpan;
@@ -68,6 +67,20 @@ public class ShadowTextView extends ShadowView {
         
         sendOnTextChanged(oldValue);
         sendAfterTextChanged();
+    }
+    
+    @Implementation 
+    public final void append(CharSequence text)  {
+        CharSequence oldValue = this.text;
+        StringBuffer sb = new StringBuffer(this.text);
+        sb.append(text);
+    
+        sendBeforeTextChanged(sb.toString());
+        this.text = sb.toString();
+        
+        sendOnTextChanged(oldValue);
+        sendAfterTextChanged();
+        
     }
 
     @Implementation
@@ -402,6 +415,16 @@ public class ShadowTextView extends ShadowView {
         this.watchers.add(watcher);
     }
     
+    @Implementation
+    public void removeTextChangedListener(TextWatcher watcher) {
+        this.watchers.remove(watcher);
+    }
+
+    @Implementation
+    public TextPaint getPaint() {
+        return new TextPaint();
+    }
+
     /**
      * @return the list of currently registered watchers/listeners
      */

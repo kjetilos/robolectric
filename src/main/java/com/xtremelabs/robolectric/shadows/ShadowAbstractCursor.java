@@ -1,13 +1,16 @@
 package com.xtremelabs.robolectric.shadows;
 
+import java.util.HashMap;
+import java.util.Map;
+
+import android.content.ContentResolver;
 import android.database.AbstractCursor;
 import android.database.CursorWindow;
+import android.net.Uri;
+
 import com.xtremelabs.robolectric.internal.Implementation;
 import com.xtremelabs.robolectric.internal.Implements;
 import com.xtremelabs.robolectric.internal.RealObject;
-
-import java.util.HashMap;
-import java.util.Map;
 
 
 @Implements(AbstractCursor.class)
@@ -21,18 +24,19 @@ public class ShadowAbstractCursor {
     protected String[] columnNameArray;
     protected Map<Integer, Map<String, Object>> rows = new HashMap<Integer, Map<String, Object>>();
     protected int rowCount;
+    protected Uri notificationUri;
 
     @Implementation
     public int getCount() {
         return rowCount;
     }
-    
+
     @Implementation
     public boolean moveToFirst() {
         setPosition(0);
         return realAbstractCursor.getCount() > 0;
     }
-    
+
     @Implementation
     public boolean moveToLast() {
     	if( realAbstractCursor.getCount() == 0 ) {
@@ -102,6 +106,25 @@ public class ShadowAbstractCursor {
     }
 
     @Implementation
+    public String getColumnName(int column) {
+        return columnNameArray[column];
+    }
+
+    @Implementation
+    public int getColumnIndex(String columnName) {
+        for (int i=0; i<columnNameArray.length; i++) {
+            if (columnName.equals(columnNameArray[i])) return i;
+        }
+        return -1;
+    }
+
+    @Implementation
+    public int getColumnIndexOrThrow(String columnName) {
+        int idx = getColumnIndex(columnName);
+        if (idx >= 0) return idx; else throw new IllegalArgumentException("column does not exist");
+    }
+
+    @Implementation
     public int getColumnCount() {
         return getColumnNames().length;
     }
@@ -124,5 +147,18 @@ public class ShadowAbstractCursor {
     @Implementation
     public boolean isAfterLast() {
         return currentRowNumber >= realAbstractCursor.getCount();
+    }
+
+    @Implementation
+    public void setNotificationUri(ContentResolver cr, Uri notifyUri) {
+        notificationUri = notifyUri;
+    }
+
+    /**
+     * Returns the Uri set by {@code setNotificationUri()}.  Method included for testing
+     * pre-API 11 projects.
+     */
+    public Uri getNotificationUri_Compatibility() {
+        return notificationUri;
     }
 }
