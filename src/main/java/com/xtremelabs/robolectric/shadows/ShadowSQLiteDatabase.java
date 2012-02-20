@@ -1,20 +1,11 @@
 package com.xtremelabs.robolectric.shadows;
 
-import android.content.ContentValues;
-import android.database.Cursor;
-import android.database.DatabaseUtils;
-import android.database.sqlite.SQLiteClosable;
-import android.database.sqlite.SQLiteCursor;
-import android.database.sqlite.SQLiteDatabase;
-import android.database.sqlite.SQLiteDatabaseCorruptException;
-import android.database.sqlite.SQLiteQueryBuilder;
-import android.database.sqlite.SQLiteStatement;
-import com.xtremelabs.robolectric.Robolectric;
-import com.xtremelabs.robolectric.internal.Implementation;
-import com.xtremelabs.robolectric.internal.Implements;
-import com.xtremelabs.robolectric.internal.RealObject;
-import com.xtremelabs.robolectric.util.DatabaseConfig;
-import com.xtremelabs.robolectric.util.SQLite.SQLStringAndBindings;
+import static com.xtremelabs.robolectric.Robolectric.newInstanceOf;
+import static com.xtremelabs.robolectric.Robolectric.shadowOf;
+import static com.xtremelabs.robolectric.util.SQLite.buildDeleteString;
+import static com.xtremelabs.robolectric.util.SQLite.buildInsertString;
+import static com.xtremelabs.robolectric.util.SQLite.buildUpdateString;
+import static com.xtremelabs.robolectric.util.SQLite.buildWhereClause;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -25,12 +16,22 @@ import java.util.Iterator;
 import java.util.WeakHashMap;
 import java.util.concurrent.locks.ReentrantLock;
 
-import static com.xtremelabs.robolectric.Robolectric.newInstanceOf;
-import static com.xtremelabs.robolectric.Robolectric.shadowOf;
-import static com.xtremelabs.robolectric.util.SQLite.buildDeleteString;
-import static com.xtremelabs.robolectric.util.SQLite.buildInsertString;
-import static com.xtremelabs.robolectric.util.SQLite.buildUpdateString;
-import static com.xtremelabs.robolectric.util.SQLite.buildWhereClause;
+import com.xtremelabs.robolectric.Robolectric;
+import com.xtremelabs.robolectric.internal.Implementation;
+import com.xtremelabs.robolectric.internal.Implements;
+import com.xtremelabs.robolectric.internal.RealObject;
+import com.xtremelabs.robolectric.util.DatabaseConfig;
+import com.xtremelabs.robolectric.util.SQLite.SQLStringAndBindings;
+
+import android.content.ContentValues;
+import android.database.Cursor;
+import android.database.DatabaseUtils;
+import android.database.sqlite.SQLiteClosable;
+import android.database.sqlite.SQLiteCursor;
+import android.database.sqlite.SQLiteDatabase;
+import android.database.sqlite.SQLiteDatabaseCorruptException;
+import android.database.sqlite.SQLiteQueryBuilder;
+import android.database.sqlite.SQLiteStatement;
 
 /**
  * Shadow for {@code SQLiteDatabase} that simulates the movement of a {@code Cursor} through database tables.
@@ -146,9 +147,10 @@ public class ShadowSQLiteDatabase  {
     public int update(String table, ContentValues values, String whereClause, String[] whereArgs) {
         SQLStringAndBindings sqlUpdateString = buildUpdateString(table, values, whereClause, whereArgs);
 
-        try {
-            PreparedStatement statement = connection.prepareStatement(sqlUpdateString.sql);
-            Iterator<Object> columns = sqlUpdateString.columnValues.iterator();
+        try {               
+            String scrubbedSql = DatabaseConfig.getScrubSQL(sqlUpdateString.sql);
+            PreparedStatement statement = connection.prepareStatement(scrubbedSql);
+            Iterator<Object> columns = sqlUpdateString.columnValues.iterator();             
             int i = 1;
             while (columns.hasNext()) {
                 statement.setObject(i++, columns.next());
@@ -163,9 +165,9 @@ public class ShadowSQLiteDatabase  {
     @Implementation
     public int delete(String table, String whereClause, String[] whereArgs) {
         String sql = buildDeleteString(table, whereClause, whereArgs);
-
         try {
-            return connection.prepareStatement(sql).executeUpdate();
+            String scrubbedSql = DatabaseConfig.getScrubSQL(sql);
+            return connection.prepareStatement(scrubbedSql).executeUpdate();
         } catch (SQLException e) {
             throw new RuntimeException("SQL exception in delete", e);
         }
