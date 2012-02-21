@@ -84,7 +84,7 @@
         <dependency>
             <groupId>com.google.android.maps</groupId>
             <artifactId>maps</artifactId>
-            <version>10_r2</version>
+            <version>11_r1</version>
             <scope>provided</scope>
         </dependency>
 
@@ -230,60 +230,22 @@
     </profiles>
 
     <scm>
-        <url>git@github.com:pivotal/robolectric.git</url>
-        <connection>scm:git:git://github.com/pivotal/robolectric.git</connection>
-        <developerConnection>scm:git:git@github.com:pivotal/robolectric.git</developerConnection>
+        <url>git@github.com:kjetilos/robolectric.git</url>
+        <connection>scm:git:git@github.com:kjetilos/robolectric.git</connection>
+        <developerConnection>scm:git:git@github.com:kjetilos/robolectric.git</developerConnection>
     </scm>
-
-    <ciManagement>
-        <system>Hudson</system>
-        <url>http://ci.robolectric.org/job/robolectric</url>
-    </ciManagement>
 
     <developers>
         <developer>
-            <id>xian</id>
-            <name>Christian Williams</name>
-            <email>xian@pivotallabs.com</email>
-            <organization>Pivotal Labs</organization>
-            <organizationUrl>http://pivotallabs.com/</organizationUrl>
+            <id>kjetilos</id>
+            <name>Kjetil Østerås</name>
+            <email>kjetilos@gmail.com</email>
             <roles>
                 <role>Developer</role>
             </roles>
-            <timezone>PST/PDT</timezone>
-        </developer>
-        <developer>
-            <id>tyler</id>
-            <name>Tyler Schultz</name>
-            <email>tyler@pivotallabs.com</email>
-            <organization>Pivotal Labs</organization>
-            <organizationUrl>http://pivotallabs.com/</organizationUrl>
-            <roles>
-                <role>Project Owner</role>
-                <role>Developer</role>
-            </roles>
-            <timezone>PST/PDT</timezone>
-        </developer>
-        <developer>
-            <id>phil</id>
-            <name>Phil Goodwin</name>
-            <email>phil@pivotallabs.com</email>
-            <organization>Pivotal Labs</organization>
-            <organizationUrl>http://pivotallabs.com/</organizationUrl>
-            <roles>
-                <role>Developer</role>
-            </roles>
-            <timezone>PST/PDT</timezone>
+            <timezone>CET</timezone>
         </developer>
     </developers>
-
-    <mailingLists>
-        <mailingList>
-            <name>User List</name>
-            <post>robolectric@googlegroups.com</post>
-            <archive>http://groups.google.com/group/robolectric</archive>
-        </mailingList>
-    </mailingLists>
 
     <licenses>
         <license>
