@@ -17,10 +17,12 @@ public class RawResourceLoader {
 
     public InputStream getValue(int resourceId) {
         String resourceFileName = resourceExtractor.getResourceName(resourceId);
-        String resourceName = resourceFileName.substring("/raw".length());
+        String resourceName = resourceFileName.substring("raw/".length());
 
         File rawResourceDir = new File(resourceDir, "raw");
-
+        if (!(rawResourceDir.exists() && rawResourceDir.isDirectory())) {
+            return null;
+        }
         try {
             File[] files = rawResourceDir.listFiles();
             for (int i = 0; i < files.length; i++) {

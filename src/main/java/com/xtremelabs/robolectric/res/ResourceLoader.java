@@ -256,7 +256,9 @@ public class ResourceLoader {
     }
 
     private void loadValueResourcesFromDirs(DocumentLoader documentLoader, File localValueResourceDir, File systemValueResourceDir) throws Exception {
-        loadValueResourcesFromDir(documentLoader, localValueResourceDir);
+        if (localValueResourceDir.exists()) {
+            loadValueResourcesFromDir(documentLoader, localValueResourceDir);
+        }
         loadSystemResourceXmlDir(documentLoader, systemValueResourceDir);
     }
 
