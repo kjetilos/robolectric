@@ -77,9 +77,6 @@ public class ResourceLoader {
 
         public Resources(Class rClass, int sdkVersion, File resourceDir, File assetsDir,
                          List<File> libResourceDirs, List<File> libAssetDirs) throws Exception {
-
-            System.out.println("Creating Resources for " + rClass + " with " + (libResourceDirs.size() + 1) + " resource dirs");
-
             this.sdkVersion = sdkVersion;
             resourceExtractor = new ResourceExtractor();
             resourceExtractor.addLocalRClass(rClass);
