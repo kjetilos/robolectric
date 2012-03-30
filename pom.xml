@@ -10,7 +10,7 @@
 
     <groupId>com.pivotallabs</groupId>
     <artifactId>robolectric</artifactId>
-    <version>1.2.cisco.9-SNAPSHOT</version>
+    <version>1.2.cisco.9</version>
     <packaging>jar</packaging>
     <name>Robolectric</name>
     <description>An alternative Android testing framework.</description>
