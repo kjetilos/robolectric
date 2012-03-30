@@ -16,6 +16,11 @@ public class ShadowMessage {
     private Message message;
 
     @Implementation
+    public static Message obtain() {
+        return new Message();
+    }
+
+    @Implementation
     public void setData(Bundle data) {
         this.data = data;
     }
