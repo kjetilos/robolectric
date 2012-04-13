@@ -228,6 +228,7 @@ public class Robolectric {
                 ShadowRadioGroup.class,
                 ShadowRatingBar.class,
                 ShadowRect.class,
+                ShadowRelativeLayout.class,
                 ShadowResolveInfo.class,
                 ShadowRemoteCallbackList.class,
                 ShadowRemoteViews.class,
@@ -662,6 +663,10 @@ public class Robolectric {
 
     public static ShadowRatingBar shadowOf(RatingBar instance) {
         return (ShadowRatingBar) shadowOf_(instance);
+    }
+
+    public static ShadowRelativeLayout shadowOf(RelativeLayout instance) {
+        return (ShadowRelativeLayout) shadowOf_(instance);
     }
 
     public static ShadowRemoteViews shadowOf(RemoteViews instance) {
